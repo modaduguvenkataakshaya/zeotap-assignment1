@@ -1,0 +1,173 @@
+npx create-react-app google-sheets-mimic
+cd google-sheets-mimic
+npm install react-dnd handsontable chart.js lodash axios
+npm install --save mathjs
+import React, { useState, useEffect } from 'react';
+import Spreadsheet from './components/Spreadsheet';
+import Toolbar from './components/Toolbar';
+import FormulaBar from './components/FormulaBar';
+
+const App = () => {
+  const [spreadsheetData, setSpreadsheetData] = useState([]);
+  const [formula, setFormula] = useState('');
+
+  useEffect(() => {
+    // Initialize spreadsheet with default data or load from a file.
+    const initialData = Array(10).fill(Array(10).fill(''));
+    setSpreadsheetData(initialData);
+  }, []);
+
+  return (
+    <div>
+      <Toolbar />
+      <FormulaBar formula={formula} setFormula={setFormula} />
+      <Spreadsheet data={spreadsheetData} setData={setSpreadsheetData} />
+    </div>
+  );
+};
+
+export default App;
+import React from 'react';
+import Handsontable from 'handsontable';
+import 'handsontable/dist/handsontable.full.css';
+
+const Spreadsheet = ({ data, setData }) => {
+  const containerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const hot = new Handsontable(containerRef.current, {
+      data,
+      rowHeaders: true,
+      colHeaders: true,
+      licenseKey: 'non-commercial-and-evaluation',
+      afterChange: (changes) => {
+        if (changes) {
+          const newData = [...data];
+          changes.forEach(([row, col, oldVal, newVal]) => {
+            newData[row][col] = newVal;
+          });
+          setData(newData);
+        }
+      },
+    });
+
+    return () => hot.destroy();
+  }, [data, setData]);
+
+  return <div ref={containerRef}></div>;
+};
+
+export default Spreadsheet;
+import React from 'react';
+
+const Toolbar = () => {
+  const addRow = () => {
+    console.log('Add Row clicked');
+  };
+
+  const addColumn = () => {
+    console.log('Add Column clicked');
+  };
+
+  return (
+    <div className="toolbar">
+      <button onClick={addRow}>Add Row</button>
+      <button onClick={addColumn}>Add Column</button>
+      {/* Add more buttons as needed */}
+    </div>
+  );
+};
+
+export default Toolbar;
+import React, { useState } from 'react';
+import { evaluateFormula } from '../utils/functions';
+
+const FormulaBar = ({ formula, setFormula }) => {
+  const [result, setResult] = useState('');
+
+  const handleFormulaChange = (event) => {
+    const formulaInput = event.target.value;
+    setFormula(formulaInput);
+    setResult(evaluateFormula(formulaInput)); // Handle formula evaluation
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={formula}
+        onChange={handleFormulaChange}
+        placeholder="Enter formula"
+      />
+      <div>Result: {result}</div>
+    </div>
+  );
+};
+
+export default FormulaBar;
+const express = require('express');
+const app = express();
+const cors = require('cors');
+const path = require('path');
+const bodyParser = require('body-parser');
+
+// Use middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// Placeholder in-memory database
+let spreadsheetData = [];
+
+app.get('/spreadsheet', (req, res) => {
+  res.json(spreadsheetData);
+});
+
+app.post('/spreadsheet', (req, res) => {
+  spreadsheetData = req.body.data;
+  res.status(200).send('Spreadsheet data saved!');
+});
+
+const port = 5000;
+app.listen(port, () => console.log(`Server running on port ${port}`));
+export const sum = (values) => {
+  return values.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+};
+export const average = (values) => {
+  const validValues = values.filter((val) => !isNaN(parseFloat(val)));
+  const total = sum(validValues);
+  return validValues.length ? total / validValues.length : 0;
+};
+export const max = (values) => {
+  const validValues = values.filter((val) => !isNaN(parseFloat(val)));
+  return validValues.length ? Math.max(...validValues) : null;
+};
+export const min = (values) => {
+  const validValues = values.filter((val) => !isNaN(parseFloat(val)));
+  return validValues.length ? Math.min(...validValues) : null;
+};
+export const count = (values) => {
+  return values.filter((val) => !isNaN(parseFloat(val))).length;
+};
+const spreadsheetData = [
+  [5, 10, 15],
+  [20, 'A', 25],
+  [30, 35, null],
+];
+const getRangeValues = (data, startRow, startCol, endRow, endCol) => {
+  const range = [];
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      range.push(data[row][col]);
+    }
+  }
+  return range;
+};
+
+
+const range = getRangeValues(spreadsheetData, 0, 0, 1, 1); // A1:B2
+console.log('SUM:', sum(range)); // SUM of A1:B2
+console.log('AVERAGE:', average(range)); // AVERAGE of A1:B2
+console.log('MAX:', max(range)); // MAX of A1:B2
+console.log('MIN:', min(range)); // MIN of A1:B2
+console.log('COUNT:', count(range)); // COUNT of A1:B2
+export const isNumeric = (value) => !isNaN(value) && value !== '';
